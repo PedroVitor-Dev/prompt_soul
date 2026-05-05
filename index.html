@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PromptSoul — Gerador de Prompts de IA</title>
+  
+  <!-- Importação de Fontes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  
+  <!-- Ligação com o arquivo CSS externo -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <span class="logo-text">PromptSoul</span>
+    <span class="header-badge">Beta</span>
+  </div>
+  <div class="header-right">
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="demo-btn" onclick="setMode('demo')">Demo</button>
+      <button class="mode-btn" id="advanced-btn" onclick="setMode('advanced')">Avançado</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Coluna Esquerda: Configurações -->
+  <div class="left-panel">
+
+    <div class="panel-section" id="api-section" style="display:none;">
+      <span class="section-label">Sua Chave do OpenRouter</span>
+      <div class="api-panel">
+        <input type="password" id="user-key-input" placeholder="sk-or-v1-..." />
+        <p class="api-note">Obtenha sua chave em <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a>. Armazenada apenas na sessão do navegador.</p>
+      </div>
+    </div>
+
+    <div id="demo-meter">
+      <div class="usage-bar">
+        <div class="usage-header">
+          <span class="usage-label">Cota de Demonstração</span>
+          <span class="usage-count" id="usage-count-label">5 / 5 restantes</span>
+        </div>
+        <div class="usage-track">
+          <div class="usage-fill" id="usage-fill" style="width:100%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="limit-banner" id="limit-banner">
+      <div class="limit-banner-title">⚠ Limite diário atingido</div>
+      <div class="limit-banner-text">Você usou todas as 5 gerações grátis hoje. Mude para o modo Avançado e use a sua própria chave para acesso ilimitado.</div>
+    </div>
+
+    <div class="panel-section">
+      <span class="section-label">Ideia da Imagem</span>
+      <textarea id="idea-input" placeholder="Um samurai solitário à beira de um penhasco ao pôr do sol…"></textarea>
+    </div>
+
+    <div class="panel-section">
+      <span class="section-label">Parâmetros de Estilo</span>
+      <div class="selectors-grid">
+        <div class="selector-group">
+          <span class="selector-label">Estilo</span>
+          <select id="sel-style">
+            <option value="">— Qualquer —</option>
+            <option value="photorealistic">Fotorrealista</option>
+            <option value="cinematic">Cinematográfico</option>
+            <option value="oil painting">Pintura a Óleo</option>
+            <option value="digital art">Arte Digital</option>
+            <option value="watercolor">Aquarela</option>
+            <option value="concept art">Arte Conceitual</option>
+            <option value="anime">Anime</option>
+            <option value="pixel art">Pixel Art</option>
+            <option value="surrealist">Surrealista</option>
+            <option value="minimalist">Minimalista</option>
+          </select>
+        </div>
+        <div class="selector-group">
+          <span class="selector-label">Iluminação</span>
+          <select id="sel-light">
+            <option value="">— Qualquer —</option>
+            <option value="golden hour">Golden Hour</option>
+            <option value="blue hour">Hora Azul</option>
+            <option value="dramatic side lighting">Luz Lateral Dramática</option>
+            <option value="soft diffused light">Luz Difusa Suave</option>
+            <option value="neon lights">Luzes Neon</option>
+            <option value="moonlight">Luar</option>
+            <option value="studio lighting">Estúdio</option>
+            <option value="backlit">Retroiluminado</option>
+            <option value="foggy ambient">Ambiente com Neblina</option>
+          </select>
+        </div>
+        <div class="selector-group">
+          <span class="selector-label">Câmera / Lente</span>
+          <select id="sel-camera">
+            <option value="">— Qualquer —</option>
+            <option value="wide angle lens">Grande Angular</option>
+            <option value="telephoto lens">Teleobjetiva</option>
+            <option value="macro lens">Macro</option>
+            <option value="fisheye lens">Olho de Peixe</option>
+            <option value="aerial drone shot">Visão de Drone</option>
+            <option value="35mm film">Filme 35mm</option>
+            <option value="tilt-shift">Tilt-Shift</option>
+            <option value="portrait lens, shallow depth of field">Retrato / Bokeh</option>
+          </select>
+        </div>
+        <div class="selector-group">
+          <span class="selector-label">Clima</span>
+          <select id="sel-mood">
+            <option value="">— Qualquer —</option>
+            <option value="epic and grand">Épico e Grandioso</option>
+            <option value="melancholic and lonely">Melancólico e Solitário</option>
+            <option value="mysterious and eerie">Misterioso e Sombrio</option>
+            <option value="peaceful and serene">Pacífico e Sereno</option>
+            <option value="chaotic and intense">Caótico e Intenso</option>
+            <option value="whimsical and dreamy">Mágico e Onírico</option>
+            <option value="dark and ominous">Escuro e Ameaçador</option>
+            <option value="joyful and vibrant">Alegre e Vibrante</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <button class="btn btn-primary" id="generate-btn" onclick="generate()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Gerar Prompts
+      </button>
+      <button class="btn btn-secondary" onclick="surpriseMe()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Surpreenda-me
+      </button>
+    </div>
+  </div>
+
+  <!-- Coluna Direita: Resultados e Histórico -->
+  <div class="right-panel">
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-results-btn" onclick="switchTab('results')">Resultados</button>
+      <button class="tab-btn" id="tab-history-btn" onclick="switchTab('history')">Histórico</button>
+      <button class="tab-btn" id="tab-favs-btn" onclick="switchTab('favorites')">Favoritos</button>
+    </div>
+
+    <!-- Guia: Resultados -->
+    <div id="tab-results">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">✦</div>
+        <div class="empty-title">Nada por aqui ainda</div>
+        <div class="empty-sub">Descreva a sua ideia de imagem, ajuste os parâmetros e clique em Gerar.</div>
+      </div>
+      <div class="loading-state" id="loading-state">
+        <div class="spinner"></div>
+        <div class="loading-text">Criando os seus prompts…</div>
+      </div>
+      <div class="results-area" id="results-area">
+        <div class="results-header">
+          <span class="results-title">Prompts Gerados</span>
+          <div class="results-actions">
+            <button class="btn btn-ghost" onclick="copyAll()">Copiar Todos</button>
+          </div>
+        </div>
+        <div id="cards-container"></div>
+      </div>
+    </div>
+
+    <!-- Guia: Histórico -->
+    <div id="tab-history" style="display:none;">
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+    <!-- Guia: Favoritos -->
+    <div id="tab-favorites" style="display:none;">
+      <div class="history-list" id="favorites-list"></div>
+    </div>
+  </div>
+</main>
+
+<div class="footer-strip">
+  <span class="footer-text">PromptSoul — Movido por OpenRouter</span>
+  <span class="footer-text" id="mode-label">Modo: Demo</span>
+</div>
+
+<div class="copy-toast" id="copy-toast">Copiado para a área de transferência ✓</div>
+
+<!-- Ligação com o arquivo JavaScript externo -->
+<script src="script.js"></script>
+</body>
+</html>
