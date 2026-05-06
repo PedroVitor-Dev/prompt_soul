@@ -169,11 +169,14 @@ function gerarVariacoesOffline(idea, style, light, camera, mood) {
   ];
 
   // [NOVO] Estilos de Diretores Cinematográficos (Directors)
-  const modificadoresDiretores = [
-    "in the style of Christopher Nolan", "in the style of Quentin Tarantino", 
-    "in the style of Wes Anderson", "in the style of Denis Villeneuve", 
-    "in the style of Ridley Scott", "in the style of Steven Spielberg", 
-    "in the style of Stanley Kubrick"
+ const modificadoresDiretores = [
+    "cinematic realism, natural lighting, epic scale, practical effects look, high contrast shadows",
+    "stylized violence, bold color palette, dramatic framing, grindhouse aesthetic, retro film look",
+    "perfect symmetry, pastel color palette, flat composition, centered framing, quirky aesthetic",
+    "minimalist sci-fi, atmospheric lighting, soft shadows, large scale environments, moody tone",
+    "futuristic noir, cyberpunk lighting, volumetric fog, dramatic highlights, industrial aesthetic",
+    "emotional cinematic lighting, warm glow, lens flare, storytelling composition, dramatic depth",
+    "cold symmetry, sterile environment, precise framing, slow cinematic mood, high detail composition"
   ];
 
   let variacoes = [];
