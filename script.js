@@ -16,7 +16,7 @@ function updateUsageUI() {
   const fill = document.getElementById("usage-fill");
   
   if (currentMode === "demo") {
-    label.textContent = "∞ Ilimitado (Modo Local)";
+    label.textContent = "∞ Ilimitado (Modo Básico)";
   } else {
     label.textContent = "∞ Ilimitado (Sua API Key)";
   }
@@ -36,7 +36,7 @@ function setMode(mode) {
   document.getElementById("advanced-btn").classList.toggle("active", mode === "advanced");
   document.getElementById("api-section").style.display  = mode === "advanced" ? "flex" : "none";
   document.getElementById("demo-meter").style.display   = mode === "demo"     ? "block" : "none";
-  document.getElementById("mode-label").textContent     = `Modo: ${mode === "demo" ? "Demo (Local)" : "Avançado"}`;
+  document.getElementById("mode-label").textContent = `Modo: ${mode === "demo" ? "Básico" : "Avançado"}`;
   updateUsageUI();
 }
 
