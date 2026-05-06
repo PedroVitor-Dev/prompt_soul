@@ -5,7 +5,7 @@ const MODEL = "mistralai/mistral-7b-instruct:free"; // Usado apenas no modo Avan
 
 let currentMode    = "demo";
 let generatedTexts = [];
-let history        = JSON.parse(localStorage.getItem("ps_history")  || "[]");
+let promptHistory = JSON.parse(localStorage.getItem("ps_history") || "[]");
 let favorites      = JSON.parse(localStorage.getItem("ps_favs")     || "[]");
 
 /* ==========================================================================
@@ -310,19 +310,23 @@ function renderFavorites() {
    Histórico Local e Abas
    ========================================================================== */
 function saveToHistory(idea, variations) {
-  history.unshift({ idea, variations, savedAt: Date.now() });
-  if (history.length > 30) history.pop();
-  localStorage.setItem("ps_history", JSON.stringify(history));
+  console.log("✅ saveToHistory chamado com:", idea);
+  console.log("📦 promptHistory antes:", promptHistory.length);
+  promptHistory.unshift({ idea, variations, savedAt: Date.now() });
+  if (promptHistory.length > 30) promptHistory.pop();
+  localStorage.setItem("ps_history", JSON.stringify(promptHistory));
+  console.log("💾 Salvo no localStorage. Total:", promptHistory.length);
   renderHistory();
 }
 
 function renderHistory() {
   const list = document.getElementById("history-list");
-  if (!history.length) { 
-    list.innerHTML = '<div class="empty-tab">Nenhum histórico ainda. Gere alguns prompts!</div>'; 
-    return; 
-  }
-  list.innerHTML = history.map((h, i) => `
+if (!promptHistory.length) { 
+  list.innerHTML = '<div class="empty-tab">Nenhum histórico ainda. Gere alguns prompts!</div>'; 
+  return; 
+}
+list.innerHTML = promptHistory.map((h, i) =>`
+
     <div class="history-item" onclick="loadFromHistory(${i})">
       <div>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.1em">${escapeHtml(h.idea.substring(0,40))}${h.idea.length > 40 ? "…" : ""}</div>
@@ -333,16 +337,19 @@ function renderHistory() {
 }
 
 function loadFromHistory(index) {
-  const h = history[index];
+  const h = promptHistory[index];
   document.getElementById("idea-input").value = h.idea;
   generatedTexts = h.variations;
   renderResults(h.variations, h.idea);
 }
 
 function switchTab(tab) {
+  const tabIds = { results: "tab-results", history: "tab-history", favorites: "tab-favorites" };
+  const btnIds = { results: "tab-results-btn", history: "tab-history-btn", favorites: "tab-favs-btn" };
+
   ["results","history","favorites"].forEach(t => {
-    document.getElementById("tab-" + t).style.display = t === tab ? "block" : "none";
-    document.getElementById("tab-" + t + "-btn").classList.toggle("active", t === tab);
+    document.getElementById(tabIds[t]).style.display = t === tab ? "block" : "none";
+    document.getElementById(btnIds[t]).classList.toggle("active", t === tab);
   });
   if (tab === "history")   renderHistory();
   if (tab === "favorites") renderFavorites();
