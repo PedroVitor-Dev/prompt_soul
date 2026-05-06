@@ -9,13 +9,12 @@ let history        = JSON.parse(localStorage.getItem("ps_history")  || "[]");
 let favorites      = JSON.parse(localStorage.getItem("ps_favs")     || "[]");
 
 /* ==========================================================================
-   Gestão de Interface de Uso (Agora Ilimitado)
+   Gestão de Interface de Uso (Ilimitado)
    ========================================================================== */
 function updateUsageUI() {
   const label = document.getElementById("usage-count-label");
   const fill = document.getElementById("usage-fill");
   
-  // Como o modo Demo agora é local, ambos os modos são ilimitados
   if (currentMode === "demo") {
     label.textContent = "∞ Ilimitado (Modo Local)";
   } else {
@@ -41,16 +40,16 @@ function setMode(mode) {
   updateUsageUI();
 }
 
-// Banco de ideias traduzidas para o botão "Surpreenda-me"
+// [ATUALIZAÇÃO] Banco de ideias traduzidas para INGLÊS para prompts perfeitos
 const surpriseIdeas = [
-  "Um mercado cyberpunk iluminado por neon em 2087, ruas molhadas refletindo sinais holográficos",
-  "Uma biblioteca ancestral dentro de uma árvore oca gigante, cogumelos brilhantes iluminando as prateleiras",
-  "Um farol solitário num asteroide flutuando através de uma nebulosa colorida",
-  "Uma baleia mecânica gigante saltando através das nuvens acima de uma cidade Vitoriana",
-  "Uma casa de chá japonesa serena no meio de uma tundra congelada sob a aurora boreal",
-  "Um salão de baile subaquático onde águas-vivas dançam com piratas fantasmas",
-  "Um templo antigo semi-submerso num rio na selva, luz dourada filtrando através das folhas",
-  "Uma criança parada diante de uma porta maciça esculpida numa montanha viva, com nuvens saindo dela",
+  "A neon-lit cyberpunk marketplace in 2087, rain-soaked streets reflecting holographic signs",
+  "An ancient library inside a massive hollow tree, glowing mushrooms lighting the shelves",
+  "A lonely lighthouse on an asteroid floating through a colorful nebula",
+  "A giant mechanical whale breaching through clouds above a Victorian city",
+  "A serene Japanese tea house in the middle of a frozen tundra under the northern lights",
+  "An underwater ballroom where jellyfish waltz with ghost pirates",
+  "A time-worn temple half-submerged in a jungle river, golden light filtering through leaves",
+  "A child standing before a massive doorway carved into a living mountain, clouds pouring out"
 ];
 
 function surpriseMe() {
@@ -69,10 +68,24 @@ function randomSelect(id) {
 /* ==========================================================================
    Motor de Geração (Local vs API)
    ========================================================================== */
+
+async function translateToEnglish(text) {
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=pt|en`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const translated = data?.responseData?.translatedText;
+    if (translated && data.responseStatus === 200) return translated;
+  } catch (e) {}
+  return text; // fallback: retorna o original se falhar
+}
+
 async function generate() {
-  const idea = document.getElementById("idea-input").value.trim();
-  if (!idea) { alert("Por favor, descreva a sua ideia de imagem primeiro."); return; }
-  
+  const rawIdea = document.getElementById("idea-input").value.trim();
+  if (!rawIdea) { alert("Por favor, descreva a sua ideia de imagem primeiro."); return; }
+
+  // Tradução automática para inglês
+  const idea = await translateToEnglish(rawIdea);
   const style  = document.getElementById("sel-style").value;
   const light  = document.getElementById("sel-light").value;
   const camera = document.getElementById("sel-camera").value;
@@ -82,7 +95,6 @@ async function generate() {
 
   // [MODO DEMO] -> Geração Local Rápida e Gratuita
   if (currentMode === "demo") {
-    // Usamos um pequeno atraso (setTimeout) apenas para a interface de "A carregar..." ser percebida pelo utilizador
     setTimeout(() => {
       const variations = gerarVariacoesOffline(idea, style, light, camera, mood);
       generatedTexts = variations;
@@ -103,8 +115,8 @@ async function generate() {
   const params = [style, light, camera, mood].filter(Boolean);
   const paramsStr = params.length ? `\nParameters: ${params.join(", ")}.` : "";
   
-  const systemPrompt = `Você é um engenheiro de prompts especialista. Pegue uma ideia de imagem e expanda em 3 prompts ricos e detalhados em INGLÊS para IAs como Midjourney ou DALL-E.\n\nRegras:\n- Os prompts devem ser distintos em composição ou interpretação.\n- Inclua detalhes técnicos (luz, clima, cores).\n- Mantenha cada prompt entre 60-120 palavras.\n- Rotule exatamente como: VARIATION A:, VARIATION B:, VARIATION C:\n- Não adicione explicações extras.`;
-  const userMessage = `Ideia da imagem: "${idea}"${paramsStr}\n\nGere as 3 variações de prompt.`;
+  const systemPrompt = `You are an expert AI image prompt engineer. Take a basic image idea and expand it into 3 rich, detailed, professional prompts for AI image generators like Midjourney, DALL-E, or Stable Diffusion.\n\nRules:\n- Each prompt must be distinct — different framing, composition, or artistic interpretation\n- Include technical photography/art details: lighting, mood, composition, color palette, texture\n- Keep each prompt between 60-120 words\n- Label them exactly as: VARIATION A:, VARIATION B:, VARIATION C:\n- Do NOT add explanations — only the prompts themselves`;
+  const userMessage = `Image idea: "${idea}"${paramsStr}\n\nGenerate 3 prompt variations.`;
   
   try {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -131,49 +143,63 @@ async function generate() {
   }
 }
 
-// [FUNÇÃO ATUALIZADA] Gera 3 variações de prompts localmente com vocabulário avançado
+// [FUNÇÃO ATUALIZADA] Gera as 3 variações locais com Lentes e Diretores em INGLÊS
 function gerarVariacoesOffline(idea, style, light, camera, mood) {
-  // [Banco de Dados] Categorias de palavras-chave de altíssima qualidade para IA
+  // Categorias base
   const modificadoresQualidade = [
     "masterpiece", "best quality", "ultra-detailed", "8k resolution", 
     "insane detail", "hyper-realistic", "sharp focus", "award-winning photography",
     "flawless detail", "highres", "masterfully crafted"
   ];
-  
   const modificadoresRender = [
     "unreal engine 5 render", "octane render", "ray tracing", 
     "global illumination", "volumetric lighting", "ambient occlusion",
     "subsurface scattering", "physically based rendering", "cinematic lighting"
   ];
-  
   const modificadoresAtmosfera = [
     "epic composition", "vibrant colors", "cinematic atmosphere", 
     "breathtaking scenery", "stunning visuals", "dramatic lighting",
     "ethereal mood", "dynamic angle", "perfect composition"
   ];
 
+  // [NOVO] Lentes Técnicas (Camera Lenses)
+  const modificadoresLentes = [
+    "35mm lens", "50mm lens", "85mm lens", 
+    "24mm wide angle lens", "16mm ultra wide lens", "135mm telephoto lens"
+  ];
+
+  // [NOVO] Estilos de Diretores Cinematográficos (Directors)
+  const modificadoresDiretores = [
+    "in the style of Christopher Nolan", "in the style of Quentin Tarantino", 
+    "in the style of Wes Anderson", "in the style of Denis Villeneuve", 
+    "in the style of Ridley Scott", "in the style of Steven Spielberg", 
+    "in the style of Stanley Kubrick"
+  ];
+
   let variacoes = [];
 
   for (let i = 0; i < 3; i++) {
-    // [Processamento] Sorteia 2 palavras de CADA categoria para garantir diversidade
+    // Sorteia aleatoriamente palavras base
     const qual = modificadoresQualidade.sort(() => 0.5 - Math.random()).slice(0, 2);
     const ren = modificadoresRender.sort(() => 0.5 - Math.random()).slice(0, 2);
     const atm = modificadoresAtmosfera.sort(() => 0.5 - Math.random()).slice(0, 2);
     
-    // [Processamento] Junta os selects do utilizador com as 6 palavras sorteadas
-    let modificadores = [style, light, camera, mood, ...qual, ...ren, ...atm].filter(Boolean);
+    // [NOVO] Sorteia 1 Lente e 1 Diretor específicos para esta variação
+    const lente = modificadoresLentes[Math.floor(Math.random() * modificadoresLentes.length)];
+    const diretor = modificadoresDiretores[Math.floor(Math.random() * modificadoresDiretores.length)];
     
-    // [Processamento] Embaralha a ordem para que cada prompt tenha uma estrutura única
+    // Junta tudo (removendo os vazios com .filter)
+    let modificadores = [style, light, camera, mood, lente, diretor, ...qual, ...ren, ...atm].filter(Boolean);
+    
+    // Embaralha para ficar orgânico
     modificadores = modificadores.sort(() => Math.random() - 0.5);
     
-    // [Processamento] Calcula o meio da lista e insere a ideia central do utilizador lá
+    // Insere a ideia do usuário no meio da estrutura do prompt
     const indiceDoMeio = Math.floor(modificadores.length / 2);
     modificadores.splice(indiceDoMeio, 0, idea);
     
-    // [Processamento] Junta tudo numa frase separada por vírgulas e adiciona um ponto final
+    // Constrói o texto final
     let promptFinalTexto = modificadores.join(", ") + ".";
-    
-    // [Processamento] Garante que a primeira letra seja sempre maiúscula para elegância
     promptFinalTexto = promptFinalTexto.charAt(0).toUpperCase() + promptFinalTexto.slice(1);
     
     variacoes.push(promptFinalTexto);
@@ -182,7 +208,7 @@ function gerarVariacoesOffline(idea, style, light, camera, mood) {
   return variacoes;
 }
 
-// Extrai as variações da resposta da IA (Apenas para o Modo Avançado)
+// Extrai as variações da resposta da IA
 function parseVariations(raw) {
   const pattern = /VARIATION\s+[ABC]:\s*([\s\S]*?)(?=VARIATION\s+[ABC]:|$)/gi;
   const matches = [];
@@ -282,9 +308,9 @@ function renderFavorites() {
    ========================================================================== */
 function saveToHistory(idea, variations) {
   history.unshift({ idea, variations, savedAt: Date.now() });
-  if (history.length > 30) history.pop(); // Mantém apenas os últimos 30 itens
+  if (history.length > 30) history.pop();
   localStorage.setItem("ps_history", JSON.stringify(history));
-  renderHistory(); // Atualiza a aba do histórico visualmente
+  renderHistory();
 }
 
 function renderHistory() {
