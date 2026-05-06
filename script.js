@@ -1,9 +1,7 @@
 /* ==========================================================================
    Configurações Iniciais
    ========================================================================== */
-const DEMO_LIMIT_PER_DAY = 5;
-const DEMO_KEY = ""; // ← COLOQUE A SUA KEY AQUI
-const MODEL    = "mistralai/mistral-7b-instruct:free";
+const MODEL = "mistralai/mistral-7b-instruct:free"; // Usado apenas no modo Avançado
 
 let currentMode    = "demo";
 let generatedTexts = [];
@@ -11,38 +9,23 @@ let history        = JSON.parse(localStorage.getItem("ps_history")  || "[]");
 let favorites      = JSON.parse(localStorage.getItem("ps_favs")     || "[]");
 
 /* ==========================================================================
-   Gestão de Limite (Demo Mode)
+   Gestão de Interface de Uso (Agora Ilimitado)
    ========================================================================== */
-function getUsage() {
-  const stored = JSON.parse(localStorage.getItem("ps_usage") || "{}");
-  const today  = new Date().toDateString();
-  if (stored.date !== today) return { date: today, count: 0 };
-  return stored;
-}
-
-function incrementUsage() {
-  const u = getUsage(); 
-  u.count++;
-  localStorage.setItem("ps_usage", JSON.stringify(u));
-}
-
-function getRemainingDemoUses() { 
-  return Math.max(0, DEMO_LIMIT_PER_DAY - getUsage().count); 
-}
-
 function updateUsageUI() {
-  const remaining = getRemainingDemoUses();
-  const pct       = (remaining / DEMO_LIMIT_PER_DAY) * 100;
-  
-  document.getElementById("usage-count-label").textContent = `${remaining} / ${DEMO_LIMIT_PER_DAY} restantes`;
-  
+  const label = document.getElementById("usage-count-label");
   const fill = document.getElementById("usage-fill");
-  fill.style.width = pct + "%";
-  fill.classList.toggle("danger", remaining <= 1);
   
-  const limited = remaining === 0 && currentMode === "demo";
-  document.getElementById("limit-banner").classList.toggle("visible", limited);
-  document.getElementById("generate-btn").disabled = limited;
+  // Como o modo Demo agora é local, ambos os modos são ilimitados
+  if (currentMode === "demo") {
+    label.textContent = "∞ Ilimitado (Modo Local)";
+  } else {
+    label.textContent = "∞ Ilimitado (Sua API Key)";
+  }
+  
+  fill.style.width = "100%";
+  fill.classList.remove("danger");
+  document.getElementById("limit-banner").classList.remove("visible");
+  document.getElementById("generate-btn").disabled = false;
 }
 
 /* ==========================================================================
@@ -54,7 +37,7 @@ function setMode(mode) {
   document.getElementById("advanced-btn").classList.toggle("active", mode === "advanced");
   document.getElementById("api-section").style.display  = mode === "advanced" ? "flex" : "none";
   document.getElementById("demo-meter").style.display   = mode === "demo"     ? "block" : "none";
-  document.getElementById("mode-label").textContent     = `Modo: ${mode === "demo" ? "Demo" : "Avançado"}`;
+  document.getElementById("mode-label").textContent     = `Modo: ${mode === "demo" ? "Demo (Local)" : "Avançado"}`;
   updateUsageUI();
 }
 
@@ -84,7 +67,7 @@ function randomSelect(id) {
 }
 
 /* ==========================================================================
-   Comunicação com a API (Geração)
+   Motor de Geração (Local vs API)
    ========================================================================== */
 async function generate() {
   const idea = document.getElementById("idea-input").value.trim();
@@ -94,32 +77,39 @@ async function generate() {
   const light  = document.getElementById("sel-light").value;
   const camera = document.getElementById("sel-camera").value;
   const mood   = document.getElementById("sel-mood").value;
-  const userKey = document.getElementById("user-key-input").value.trim();
-  const apiKey  = currentMode === "advanced" ? userKey : DEMO_KEY;
   
-  if (!apiKey) {
-    alert(currentMode === "advanced" ? "Por favor, insira a sua chave API do OpenRouter." : "Chave demo não configurada. Use o modo Avançado com a sua própria chave.");
+  showLoading();
+
+  // [MODO DEMO] -> Geração Local Rápida e Gratuita
+  if (currentMode === "demo") {
+    // Usamos um pequeno atraso (setTimeout) apenas para a interface de "A carregar..." ser percebida pelo utilizador
+    setTimeout(() => {
+      const variations = gerarVariacoesOffline(idea, style, light, camera, mood);
+      generatedTexts = variations;
+      renderResults(variations, idea);
+      saveToHistory(idea, variations);
+    }, 600);
     return;
   }
-  
-  if (currentMode === "demo" && getRemainingDemoUses() <= 0) { 
-    updateUsageUI(); 
-    return; 
+
+  // [MODO AVANÇADO] -> Geração via API OpenRouter
+  const userKey = document.getElementById("user-key-input").value.trim();
+  if (!userKey) {
+    hideLoading();
+    alert("Por favor, insira a sua chave API do OpenRouter no modo Avançado.");
+    return;
   }
   
   const params = [style, light, camera, mood].filter(Boolean);
   const paramsStr = params.length ? `\nParameters: ${params.join(", ")}.` : "";
   
-  // A instrução ao sistema permanece pedindo saída em INGLÊS para garantir compatibilidade com geradores de imagem
   const systemPrompt = `Você é um engenheiro de prompts especialista. Pegue uma ideia de imagem e expanda em 3 prompts ricos e detalhados em INGLÊS para IAs como Midjourney ou DALL-E.\n\nRegras:\n- Os prompts devem ser distintos em composição ou interpretação.\n- Inclua detalhes técnicos (luz, clima, cores).\n- Mantenha cada prompt entre 60-120 palavras.\n- Rotule exatamente como: VARIATION A:, VARIATION B:, VARIATION C:\n- Não adicione explicações extras.`;
   const userMessage = `Ideia da imagem: "${idea}"${paramsStr}\n\nGere as 3 variações de prompt.`;
-  
-  showLoading();
   
   try {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
-      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json", "HTTP-Referer": window.location.href, "X-Title": "PromptSoul" },
+      headers: { "Authorization": `Bearer ${userKey}`, "Content-Type": "application/json", "HTTP-Referer": window.location.href, "X-Title": "PromptSoul" },
       body: JSON.stringify({ model: MODEL, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }], temperature: 0.85, max_tokens: 800 }),
     });
     
@@ -131,20 +121,68 @@ async function generate() {
     
     if (variations.length === 0) throw new Error("Não foi possível processar a resposta do modelo.");
     
-    if (currentMode === "demo") incrementUsage();
-    updateUsageUI();
-    
     generatedTexts = variations;
     renderResults(variations, idea);
     saveToHistory(idea, variations);
     
   } catch (err) {
     hideLoading();
-    alert("Erro: " + err.message);
+    alert("Erro na API: " + err.message);
   }
 }
 
-// Extrai as variações da resposta da IA
+// [FUNÇÃO ATUALIZADA] Gera 3 variações de prompts localmente com vocabulário avançado
+function gerarVariacoesOffline(idea, style, light, camera, mood) {
+  // [Banco de Dados] Categorias de palavras-chave de altíssima qualidade para IA
+  const modificadoresQualidade = [
+    "masterpiece", "best quality", "ultra-detailed", "8k resolution", 
+    "insane detail", "hyper-realistic", "sharp focus", "award-winning photography",
+    "flawless detail", "highres", "masterfully crafted"
+  ];
+  
+  const modificadoresRender = [
+    "unreal engine 5 render", "octane render", "ray tracing", 
+    "global illumination", "volumetric lighting", "ambient occlusion",
+    "subsurface scattering", "physically based rendering", "cinematic lighting"
+  ];
+  
+  const modificadoresAtmosfera = [
+    "epic composition", "vibrant colors", "cinematic atmosphere", 
+    "breathtaking scenery", "stunning visuals", "dramatic lighting",
+    "ethereal mood", "dynamic angle", "perfect composition"
+  ];
+
+  let variacoes = [];
+
+  for (let i = 0; i < 3; i++) {
+    // [Processamento] Sorteia 2 palavras de CADA categoria para garantir diversidade
+    const qual = modificadoresQualidade.sort(() => 0.5 - Math.random()).slice(0, 2);
+    const ren = modificadoresRender.sort(() => 0.5 - Math.random()).slice(0, 2);
+    const atm = modificadoresAtmosfera.sort(() => 0.5 - Math.random()).slice(0, 2);
+    
+    // [Processamento] Junta os selects do utilizador com as 6 palavras sorteadas
+    let modificadores = [style, light, camera, mood, ...qual, ...ren, ...atm].filter(Boolean);
+    
+    // [Processamento] Embaralha a ordem para que cada prompt tenha uma estrutura única
+    modificadores = modificadores.sort(() => Math.random() - 0.5);
+    
+    // [Processamento] Calcula o meio da lista e insere a ideia central do utilizador lá
+    const indiceDoMeio = Math.floor(modificadores.length / 2);
+    modificadores.splice(indiceDoMeio, 0, idea);
+    
+    // [Processamento] Junta tudo numa frase separada por vírgulas e adiciona um ponto final
+    let promptFinalTexto = modificadores.join(", ") + ".";
+    
+    // [Processamento] Garante que a primeira letra seja sempre maiúscula para elegância
+    promptFinalTexto = promptFinalTexto.charAt(0).toUpperCase() + promptFinalTexto.slice(1);
+    
+    variacoes.push(promptFinalTexto);
+  }
+
+  return variacoes;
+}
+
+// Extrai as variações da resposta da IA (Apenas para o Modo Avançado)
 function parseVariations(raw) {
   const pattern = /VARIATION\s+[ABC]:\s*([\s\S]*?)(?=VARIATION\s+[ABC]:|$)/gi;
   const matches = [];
@@ -244,8 +282,9 @@ function renderFavorites() {
    ========================================================================== */
 function saveToHistory(idea, variations) {
   history.unshift({ idea, variations, savedAt: Date.now() });
-  if (history.length > 30) history.pop();
+  if (history.length > 30) history.pop(); // Mantém apenas os últimos 30 itens
   localStorage.setItem("ps_history", JSON.stringify(history));
+  renderHistory(); // Atualiza a aba do histórico visualmente
 }
 
 function renderHistory() {
@@ -295,7 +334,7 @@ function timeAgo(ts) {
   return Math.floor(diff/86400000) + "d atrás";
 }
 
-// Inicialização
+// Inicialização da Aplicação
 updateUsageUI();
 renderHistory();
 renderFavorites();
